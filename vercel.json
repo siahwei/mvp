@@ -1,0 +1,5 @@
+{
+  "redirects": [
+    { "source": "/", "destination": "/xhs-preview.html", "permanent": false }
+  ]
+}

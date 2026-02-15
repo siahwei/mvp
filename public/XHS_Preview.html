@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>XHS 草稿</title>
+  <style>
+    :root{
+      --bg:#0b0b0f; --card:#14141b; --muted:#9aa0aa; --text:#f2f3f5;
+      --chip:#1f202a; --line:#232433; --accent:#ff2d55;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial}
+    .wrap{max-width:420px;margin:0 auto;padding:14px 14px 22px}
+    .top{display:flex;align-items:center;gap:10px;padding:6px 0 10px}
+    .back{width:34px;height:34px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--text);opacity:.9}
+    .photoRow{display:flex;gap:10px;align-items:center;margin:10px 0 12px}
+    .photo{
+      width:64px;height:64px;border-radius:14px;overflow:hidden;background:#222;
+      flex:0 0 auto;border:1px solid rgba(255,255,255,.06)
+    }
+    .photo img{width:100%;height:100%;object-fit:cover;display:block}
+    .addBtn{
+      width:64px;height:64px;border-radius:14px;background:var(--card);
+      border:1px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;
+      color:var(--muted);font-size:28px
+    }
+    .title{
+      width:100%;border:0;outline:0;background:transparent;color:var(--text);
+      font-size:18px;font-weight:700;line-height:1.25;margin:6px 0 10px
+    }
+    .body{
+      width:100%;min-height:220px;border:0;outline:0;background:transparent;color:var(--text);
+      font-size:15px;line-height:1.5;white-space:pre-wrap;resize:none
+    }
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .chip{
+      background:var(--chip);border:1px solid rgba(255,255,255,.08);
+      padding:8px 10px;border-radius:999px;color:#d7d9de;font-size:13px;
+      cursor:pointer;user-select:none
+    }
+    .chip:active{transform:scale(.98)}
+    .row{
+      margin-top:14px;border-top:1px solid var(--line);padding-top:10px
+    }
+    .opt{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 2px;color:#d7d9de;font-size:14px
+    }
+    .opt span{color:var(--muted)}
+    .bar{
+      position:sticky;bottom:0;background:linear-gradient(to top, rgba(11,11,15,1), rgba(11,11,15,.85));
+      padding:12px 0 0;margin-top:16px
+    }
+    .actions{display:flex;gap:10px}
+    .btn{
+      flex:1;border:0;border-radius:999px;padding:12px 14px;
+      font-size:14px;font-weight:700;cursor:pointer
+    }
+    .btnGhost{background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,.10)}
+    .btnAccent{background:var(--accent);color:white}
+    .hint{color:var(--muted);font-size:12px;margin:10px 2px 0;line-height:1.4}
+    .toast{
+      position:fixed;left:50%;transform:translateX(-50%);
+      bottom:92px;background:rgba(20,20,27,.95);border:1px solid rgba(255,255,255,.10);
+      padding:10px 12px;border-radius:12px;color:var(--text);font-size:13px;
+      display:none;max-width:90vw
+    }
+    .overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);
+      display:none;align-items:center;justify-content:center;padding:18px
+    }
+    .modal{
+      width:100%;max-width:380px;background:var(--card);border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;padding:14px
+    }
+    .modal h3{margin:0 0 6px;font-size:16px}
+    .modal p{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.45}
+    .modal .mBtns{display:flex;gap:10px}
+    .small{font-size:12px;color:var(--muted);margin-top:8px}
+    a{color:inherit}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="back">←</div>
+      <div style="color:var(--muted);font-size:13px;">Chrome</div>
+    </div>
+
+    <div class="photoRow">
+      <div class="photo"><img id="coverImg" src="https://placehold.co/600x600?text=Cover" alt="cover"/></div>
+
+      <div class="addBtn">+</div>
+    </div>
+
+    <input class="title" id="title" value="" placeholder="添加标题（可选）" />
+
+    <textarea class="body" id="body" placeholder="写下你的笔记…"></textarea>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="row">
+      <div class="opt">📍 标记地点 <span>可选</span></div>
+      <div class="opt">👁 公开可见 <span>默认</span></div>
+      <div class="opt">🧩 添加组件 <span>可添加文件</span></div>
+      <div class="opt">⚙️ 高级选项 <span></span></div>
+    </div>
+
+    <div class="bar">
+      <div class="actions">
+        <button class="btn btnGhost" id="btnSaveImg">保存图片</button>
+        <button class="btn btnGhost" id="btnCopyAll">复制全文</button>
+      </div>
+      <div class="actions" style="margin-top:10px;">
+        <button class="btn btnAccent" id="btnPublish">发布笔记</button>
+      </div>
+      <div class="hint">
+        提示：小红书不支持网页直接代发。点击“保存图片”+“复制全文”，再打开小红书粘贴发布即可。
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h3>下一步怎么发布到小红书？</h3>
+      <p>1）先点一次「保存图片」保存到相册<br/>2）再点「复制全文」复制文案<br/>3）打开小红书 → 发笔记 → 选图片 → 粘贴文案 → 发布</p>
+      <div class="mBtns">
+        <button class="btn btnGhost" id="mClose">知道了</button>
+        <button class="btn btnAccent" id="mCopy">复制全文</button>
+      </div>
+      <div class="small">如果你要“更懒”的版本：我也可以把这流程改成 WhatsApp/Telegram 直接发图更顺。</div>
+    </div>
+  </div>
+
+<script>
+  const toast = (msg) => {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(window.__t);
+    window.__t = setTimeout(()=> t.style.display='none', 1800);
+  };
+
+  // --- read params ---
+  const params = new URLSearchParams(window.location.search);
+
+  const qpTitle = (params.get('title') || '').trim();
+  const qpCaption = (params.get('caption') || '').trim();
+  const qpHashtagsRaw = (params.get('hashtags') || '').trim();
+
+  // Support "tag1 tag2", "tag1,tag2", "#tag1 #tag2"
+  const tags = qpHashtagsRaw
+    ? qpHashtagsRaw.split(/[\s,]+/).filter(Boolean).map(t => t.startsWith('#') ? t : `#${t}`)
+    : [];
+
+  // Fill UI safely (no innerHTML from params)
+  document.getElementById('title').value = qpTitle;
+  document.getElementById('body').value = qpCaption;
+
+  const chips = document.getElementById('chips');
+  chips.innerHTML = '';
+  for (const t of tags) {
+    const d = document.createElement('div');
+    d.className = 'chip';
+    d.textContent = t;
+    chips.appendChild(d);
+  }
+
+  // Used by "Copy All"
+  let hashtagsJoined = tags.join(' ');
+
+  // Optional: allow image param later without breaking anything
+  const imageUrl = (params.get('image') || document.getElementById('coverImg').src);
+  document.getElementById('coverImg').src = imageUrl;
+
+  // ... keep the rest of your existing script (copy/save/publish handlers) ...
+</script>
+
+</body>
+</html>
