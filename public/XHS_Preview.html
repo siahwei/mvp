@@ -135,49 +135,136 @@
     </div>
   </div>
 
-<script>
-  const toast = (msg) => {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.style.display = 'block';
-    clearTimeout(window.__t);
-    window.__t = setTimeout(()=> t.style.display='none', 1800);
-  };
+  <script>
+    const toast = (msg) => {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      clearTimeout(window.__t);
+      window.__t = setTimeout(() => (t.style.display = 'none'), 1800);
+    };
 
-  // --- read params ---
-  const params = new URLSearchParams(window.location.search);
+    // --- read params ---
+    const params = new URLSearchParams(window.location.search);
 
-  const qpTitle = (params.get('title') || '').trim();
-  const qpCaption = (params.get('caption') || '').trim();
-  const qpHashtagsRaw = (params.get('hashtags') || '').trim();
+    const qpTitle = (params.get('title') || '').trim();
+    const qpCaption = (params.get('caption') || '').trim();
+    const qpHashtagsRaw = (params.get('hashtags') || '').trim();
 
-  // Support "tag1 tag2", "tag1,tag2", "#tag1 #tag2"
-  const tags = qpHashtagsRaw
-    ? qpHashtagsRaw.split(/[\s,]+/).filter(Boolean).map(t => t.startsWith('#') ? t : `#${t}`)
-    : [];
+    // Support "tag1 tag2", "tag1,tag2", "#tag1 #tag2"
+    const tags = qpHashtagsRaw
+      ? qpHashtagsRaw
+          .split(/[\s,]+/)
+          .filter(Boolean)
+          .map((t) => (t.startsWith('#') ? t : `#${t}`))
+      : [];
 
-  // Fill UI safely (no innerHTML from params)
-  document.getElementById('title').value = qpTitle;
-  document.getElementById('body').value = qpCaption;
+    // Fill UI safely (no innerHTML from params)
+    document.getElementById('title').value = qpTitle;
+    document.getElementById('body').value = qpCaption;
 
-  const chips = document.getElementById('chips');
-  chips.innerHTML = '';
-  for (const t of tags) {
-    const d = document.createElement('div');
-    d.className = 'chip';
-    d.textContent = t;
-    chips.appendChild(d);
-  }
+    const chips = document.getElementById('chips');
+    chips.innerHTML = '';
+    for (const t of tags) {
+      const d = document.createElement('div');
+      d.className = 'chip';
+      d.textContent = t;
+      chips.appendChild(d);
+    }
 
-  // Used by "Copy All"
-  let hashtagsJoined = tags.join(' ');
+    // Optional image param
+    const imageUrl = params.get('image') || document.getElementById('coverImg').src;
+    document.getElementById('coverImg').src = imageUrl;
 
-  // Optional: allow image param later without breaking anything
-  const imageUrl = (params.get('image') || document.getElementById('coverImg').src);
-  document.getElementById('coverImg').src = imageUrl;
+    // --- clipboard helpers ---
+    async function copyToClipboard(text) {
+      // Modern API (works on https + user gesture)
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          // fall through to legacy
+        }
+      }
 
-  // ... keep the rest of your existing script (copy/save/publish handlers) ...
-</script>
+      // Fallback for older browsers / some embedded webviews
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+
+      let ok = false;
+      try {
+        ok = document.execCommand('copy');
+      } catch (e) {
+        ok = false;
+      }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    function buildFullText() {
+      const title = document.getElementById('title').value.trim();
+      const body = document.getElementById('body').value.trim();
+      const hashtagsJoined = tags.join(' ').trim();
+
+      // Format: Title\n\nBody\n\n#tags
+      return [title, body, hashtagsJoined].filter(Boolean).join('\n\n');
+    }
+
+    // --- wire buttons ---
+    const btnCopyAll = document.getElementById('btnCopyAll');
+    const btnPublish = document.getElementById('btnPublish');
+    const btnSaveImg = document.getElementById('btnSaveImg');
+
+    const overlay = document.getElementById('overlay');
+    const mClose = document.getElementById('mClose');
+    const mCopy = document.getElementById('mCopy');
+
+    btnCopyAll?.addEventListener('click', async () => {
+      const ok = await copyToClipboard(buildFullText());
+      toast(ok ? '已复制全文 ✅' : '复制失败：请长按选择复制');
+    });
+
+    // Modal “copy”
+    mCopy?.addEventListener('click', async () => {
+      const ok = await copyToClipboard(buildFullText());
+      toast(ok ? '已复制全文 ✅' : '复制失败：请长按选择复制');
+    });
+
+    // “Publish” just shows instructions overlay
+    btnPublish?.addEventListener('click', () => {
+      overlay.style.display = 'flex';
+    });
+
+    mClose?.addEventListener('click', () => {
+      overlay.style.display = 'none';
+    });
+
+    // Tap outside modal closes
+    overlay?.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.style.display = 'none';
+    });
+
+    // Click a hashtag chip to copy that single tag
+    chips?.addEventListener('click', async (e) => {
+      const el = e.target;
+      if (el && el.classList && el.classList.contains('chip')) {
+        const ok = await copyToClipboard(el.textContent.trim());
+        toast(ok ? `已复制 ${el.textContent}` : '复制失败');
+      }
+    });
+
+    // Save Image button (optional: not implemented here)
+    btnSaveImg?.addEventListener('click', () => {
+      toast('保存图片：如需自动生成图片，我可以加 html2canvas 实现');
+    });
+  </script>
 
 </body>
 </html>
